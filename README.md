@@ -82,5 +82,3 @@ python thinglang.py thinglang.tl
 ## License
 
 This project is released under the MIT License.
-
-```
