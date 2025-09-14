@@ -45,7 +45,7 @@ greet
 NOTAGAIN
     THINGSAY "Looping..."
 TIMES IS 3
-````
+```
 
 **Output:**
 
@@ -64,9 +64,23 @@ Looping...
 
 Clone this repository, type your code in a `.tl` file (e.g., `thinglang.tl`), and run:
 
+**Option 1 – File-based interpreter:**
+
 ```bash
 python thinglang.py thinglang.tl
 ```
+
+**Option 2 – Standard input / stdin-based interpreter:**
+
+```powershell
+Get-Content thinglang.tl | python stdin_thinglang.py   # PowerShell
+```
+
+```cmd
+type thinglang.tl | python stdin_thinglang.py          # CMD
+```
+
+> The stdin version is useful for piping code, Replit, or other online environments.
 
 ---
 
