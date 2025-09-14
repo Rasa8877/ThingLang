@@ -1,18 +1,23 @@
-! This is a comment in ThingLang
+! defines a variable with value of 5:
 THIS x IS 5
-! prints 5:
+! prints value of x (5):
 THINGSAY x
+! prints "Hello ThingLang!":
 THINGSAY "Hello ThingLang!"
 
+! creates a function named greet:
 DOTHING greet GONNA
-    ! This function prints a greeting
+! prints "Hello from a function!":
     THINGSAY "Hello from a function!"
+! ends the function part:
 GONNAEND
 
-! THINGSAY "Hi", not gonna work
-
+! calls the function:
 greet
 
+! starts a loop:
 NOTAGAIN
+! prints "Looping...":
     THINGSAY "Looping..."
-TIMES IS 3
+! tells the loop to do the part n times:
+TIMES IS 5
