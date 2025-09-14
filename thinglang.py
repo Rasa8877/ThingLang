@@ -5,59 +5,88 @@ class ThingLang:
         self.vars = {}
         self.funcs = {}
 
-    def run(self, lines):
+    def run(self, lines, indent_level=0):
         i = 0
         while i < len(lines):
-            line = lines[i].strip()
-            if not line or line.startswith('!'):  # skip empty lines or comments
+            line = lines[i].rstrip()
+            line = line.split('!', 1)[0].rstrip()  # remove inline comment
+            stripped = line.strip()
+
+            if not stripped:  # skip empty lines
                 i += 1
                 continue
 
             # Variable definition
-            if line.startswith("THIS"):
-                _, name, _, value = line.split(maxsplit=3)
-                self.vars[name] = self._eval(value)
+            if stripped.startswith("THIS"):
+                try:
+                    _, name, _, value = stripped.split(maxsplit=3)
+                    self.vars[name] = self._eval_expr(value)
+                except ValueError:
+                    raise Exception(f"Invalid variable definition: {stripped}")
 
             # Print
-            elif line.startswith("THINGSAY"):
-                _, value = line.split(maxsplit=1)
-                print(self._eval(value))
+            elif stripped.startswith("THINGSAY"):
+                _, value = stripped.split(maxsplit=1)
+                print(self._eval_expr(value))
 
             # Function definition
-            elif line.startswith("DOTHING"):
-                _, name, _ = line.split(maxsplit=2)
-                body = []
-                i += 1
-                while not lines[i].startswith("GONNAEND"):
-                    body.append(lines[i])
-                    i += 1
+            elif stripped.startswith("DOTHING"):
+                parts = stripped.split(maxsplit=2)
+                if len(parts) != 3:
+                    raise Exception(f"Invalid function definition: {stripped}")
+                _, name, _ = parts
+                body, i = self._collect_block(lines, i + 1, "GONNAEND", indent_level + 1)
                 self.funcs[name] = body
 
             # Function call
-            elif line in self.funcs:
-                self.run(self.funcs[line])
+            elif stripped in self.funcs:
+                self.run(self.funcs[stripped], indent_level + 1)
 
             # Loop
-            elif line.startswith("NOTAGAIN"):
-                body = []
-                i += 1
-                while not lines[i].startswith("TIMES IS"):
-                    body.append(lines[i])
-                    i += 1
-                count = int(lines[i].split()[-1])
+            elif stripped.startswith("NOTAGAIN"):
+                body, i = self._collect_block(lines, i + 1, "TIMES IS", indent_level + 1)
+                try:
+                    count = int(lines[i].split('!', 1)[0].strip().split()[-1])
+                except ValueError:
+                    raise Exception(f"Invalid TIMES IS value: {lines[i]}")
                 for _ in range(count):
-                    self.run(body)
+                    self.run(body, indent_level + 1)
 
             i += 1
 
-    def _eval(self, value):
+    def _collect_block(self, lines, start_index, end_keyword, expected_indent):
+        block = []
+        i = start_index
+        while i < len(lines):
+            line = lines[i].rstrip()
+            line = line.split('!', 1)[0].rstrip()
+            if not line.strip():
+                i += 1
+                continue
+            current_indent = len(lines[i]) - len(lines[i].lstrip())
+            if line.strip().startswith(end_keyword) and current_indent == expected_indent - 1:
+                break
+            block.append(lines[i])
+            i += 1
+        if i >= len(lines):
+            raise Exception(f"Block missing ending '{end_keyword}'")
+        return block, i
+
+    def _eval_expr(self, value):
+        """
+        Evaluate expressions:
+        - Strings in quotes are returned as-is
+        - Variables are substituted
+        - Basic math (+, -, *, /, %) is supported
+        """
+        value = value.strip()
         if value.startswith('"') and value.endswith('"'):
             return value.strip('"')
-        if value in self.vars:
-            return self.vars[value]
+        for var in self.vars:
+            value = value.replace(var, str(self.vars[var]))
         try:
-            return int(value)
-        except ValueError:
+            return eval(value, {"__builtins__": {}})
+        except Exception:
             return value
 
 # --- MAIN: run a ThingLang file ---
